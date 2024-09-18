@@ -9,19 +9,28 @@ from scipy.optimize import brentq
 # I will be optimizing these moving forward.
 
 
-# Reproducing Hilbert Space kernel.
-# Mathematical background: https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space
-def reproducing_hilbert_space_kernel(
+def reproducing_kernel_hilbert_space(
     x: np.array, y: np.array, kernel_bandwidth: float, kernel: str = "Gaussian"
 ) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Reproducing kernel Hilbert space (RKHS). See link below for mathematical explanation.
+    https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space
+
+    Args:
+        x (np.array): n-dimensional vector.
+        y (np.array): n-dimensional vector.
+        kernel_bandwidth (float): Kernel width that controls degree of smoothness and influence of range.
+        kernel (str, optional): Desired radial basis function. Defaults to "Gaussian".
+
+    Returns:
+        float: Inner product of x and y on the feature space.
+    """
     if kernel == "Gaussian":
         return np.exp(-np.sum((x - y) ** 2) / (2 * kernel_bandwidth**2))
     elif kernel == "Laplacian":
         return np.exp(-np.sum(np.abs(x - y)) / kernel_bandwidth)
 
 
-# Used for calculating maximum mean discrepency (MMD).
 def u_statistic_kernel(
     x1: np.array,
     y1: np.array,
@@ -30,28 +39,53 @@ def u_statistic_kernel(
     kernel_bandwidth: float,
     kernel: str = "Gaussian",
 ) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Kernel for U-statistic defined by RKHSs.
+    U-statistic helper function of unbiased estimator of MMD^2 = 1 / (n(n - 1))\sum_{i\neq j}^n h(x_i, y_i, x_j, y_j)
+    MMD is maximum mean discrepency: https://stats.stackexchange.com/questions/276497/maximum-mean-discrepancy-distance-distribution
+
+    Args:
+        x1 (np.array): n-dimensional vector.
+        y1 (np.array): n-dimensional vector.
+        x2 (np.array): n-dimensional vector.
+        y2 (np.array): n-dimensional vector.
+        kernel_bandwidth (float): Kernel width that controls degree of smoothness and influence of range.
+        kernel (str, optional): Desired radial basis function. Defaults to "Gaussian".
+
+    Returns:
+        float: Unbiased estimate of MMD statistic.
+    """
     return (
-        reproducing_hilbert_space_kernel(
+        reproducing_kernel_hilbert_space(
             x=x1, y=x2, kernel_bandwidth=kernel_bandwidth, kernel=kernel
         )
-        + reproducing_hilbert_space_kernel(
+        + reproducing_kernel_hilbert_space(
             x=y1, y=y2, kernel_bandwidth=kernel_bandwidth, kernel=kernel
         )
-        - reproducing_hilbert_space_kernel(
+        - reproducing_kernel_hilbert_space(
             x=x1, y=y2, kernel_bandwidth=kernel_bandwidth, kernel=kernel
         )
-        - reproducing_hilbert_space_kernel(
+        - reproducing_kernel_hilbert_space(
             x=x2, y=y1, kernel_bandwidth=kernel_bandwidth, kernel=kernel
         )
     )
 
 
-# Unbiased estimator used for B-test.
 def maximum_mean_discrepency_squared(
     X: np.ndarray, Y: np.ndarray, kernel_bandwidth: float, kernel: str = "Gaussian"
 ) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Unbiased estimate of MMD^2 via the above U-statistic.
+
+    Args:
+        X (np.ndarray): m by n iid domain sample of distribution P.
+        Y (np.ndarray): l by n iid domain sample of distribution Q.
+        kernel_bandwidth (float): Kernel width that controls degree of smoothness and influence of range.
+        kernel (str, optional): Desired radial basis function. Defaults to "Gaussian".
+
+    Returns:
+        float: MMD^2, otherwise known as the B-test statistic.
+    """
     n = X.shape[0]
 
     u_statistic_sum = sum(
@@ -71,9 +105,18 @@ def maximum_mean_discrepency_squared(
     return u_statistic_sum / (n * (n - 1))
 
 
-# Special function used for calculating average run length for online statistic of B-statistic.
 def average_run_length_normal_helper(mu: float) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Bespoke function as helper in calculating average run length (ARL).
+    The use of this function was not explained in the literature beyond a helper function.
+    There was no further academic explanation upon further search.
+
+    Args:
+        mu (float): Mean parameter for normal distribution.
+
+    Returns:
+        float: Calculated helper value for ARL.
+    """
     pdf_value = normal.pdf(mu / 2)
     cdf_value = normal.cdf(mu / 2)
 
@@ -82,7 +125,17 @@ def average_run_length_normal_helper(mu: float) -> float:
 
 # Calculate average run length.
 def average_run_length(sampling_block_size: int, alarm_threshold: float) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Calculates average run length in online scan of B-statistic where B_0 (sampling_block_size) \geq 2.
+    This is technically the mean stopping time of T, the infimum of times that the online scan B-statistic is greater than the threshold.
+
+    Args:
+        sampling_block_size (int): Non-overlapping fixed block size (the most recent samples, refers to the size of the reference block for MMD calculation).
+        alarm_threshold (float): Stopping time threshold.
+
+    Returns:
+        float: Average run length over sample block.
+    """
     inner_term_first = (2 * sampling_block_size - 1) / (
         np.sqrt(2 * np.pi) * sampling_block_size * (sampling_block_size - 1)
     )
@@ -105,7 +158,17 @@ def average_run_length(sampling_block_size: int, alarm_threshold: float) -> floa
 def threshold_finder(
     desired_average_run_length: float, sampling_block_size: int
 ) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Threshold calculator for online scan B-statistic stopping time.
+
+    Args:
+        desired_average_run_length (float): How much time the ARL should be calculated over.
+        sampling_block_size (int): Non-overlapping fixed block size.
+
+    Returns:
+        float: B-statistic stopping time threshold.
+    """
+
     def threshold_helper(alarm_threshold: float) -> float:
         return desired_average_run_length - average_run_length(
             sampling_block_size=sampling_block_size, alarm_threshold=alarm_threshold
@@ -123,7 +186,31 @@ def b_statistic_variance(
     kernel: str = "Gaussian",
     improve: bool = False,
 ) -> float:
-    # DOCUSTRING GOES HERE
+    """
+    Variance of the online scan B-statistic.
+
+    There is either an implementation error in the R version or a syntax error in the original paper.
+    The variance in the paper is defined to use points x, y, x', y', x'', and x'''.
+    The R implementation uses all unique samples to calculate the covariance term: Cov(h(x, y, x', y'), h(x'', y'', x''', y''')) instead of Cov(h(x, y, x', y'), h(x'', y, x''', y')).
+    There was no explanation of this, so I will assume it was an implementation error.
+
+    Also, the R implementation divides the second moment by 2N instead of N. There was no explanation for this.
+    I believe this is an implementation error. If it is not, there is some symmetry in the second moment that I did not identify.
+    The "2" will be removed until testing shows otherwise.
+
+
+    Args:
+        X (np.ndarray): m by n submatrix.
+        number_of_blocks (int): Number of blocks.
+        sampling_block_size (int): Non-overlapping fixed block size.
+        kernel_bandwidth (float): Kernel width that controls degree of smoothness and influence of range.
+        iterations (int, optional): Monte Carlo iterations. Defaults to 10000.
+        kernel (str, optional): Desired radial basis function. Defaults to "Gaussian".
+        improve (bool, optional): Whether to use an improved sampling sampling method that specifies sampling distribution. Defaults to False.
+
+    Returns:
+        float: Estimated variance of online scan B-statistic.
+    """
     n = X.shape[0]
     variance_sum = 0
     probability_list = np.ones(n)
@@ -132,7 +219,7 @@ def b_statistic_variance(
         if not improve:
             id = np.random.choice(
                 np.arange(1, n + 1), 6, replace=False
-            )  # 6 because each u-statistic takes four inputs, but two are reused. This was an error in the R implementation
+            )  # 6 because each u-statistic takes four inputs, but two are reused
         else:
             id = np.random.choice(
                 np.arange(1, n + 1), 6, replace=False, p=probability_list
@@ -180,7 +267,20 @@ def detect_change_points(
     kernel: str = "Gaussian",
     improve: bool = False,
 ) -> tuple[int, int]:
-    # DOCUSTRING GOES HERE
+    """_summary_
+
+    Args:
+        X (np.ndarray): Full q by n data matrix.
+        number_of_blocks (int): Number of blocks.
+        sampling_block_size (int): Non-overlapping fixed block size.
+        alarm_threshold (float): Stopping time threshold.
+        kernel_bandwidth (float): Kernel width that controls degree of smoothness and influence of range.
+        kernel (str, optional): Desired radial basis function. Defaults to "Gaussian".
+        improve (bool, optional): Whether to use an improved sampling sampling method that specifies sampling distribution. Defaults to False.
+
+    Returns:
+        tuple[int, int]: (change point location, integer boolean whether change point was found)
+    """
     n = X.shape[0]
 
     process_variance = b_statistic_variance(
@@ -220,4 +320,4 @@ def detect_change_points(
 
 # The rest of the functions in the source repo are functions for comparison.
 # It was shown that the B-statistic was superior so I will leave the implementation at this.
-# Something something
+# This method is meant to be compared with the "ruptures" package, which is what we were using.

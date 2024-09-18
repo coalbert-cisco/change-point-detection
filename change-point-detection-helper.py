@@ -220,3 +220,4 @@ def detect_change_points(
 
 # The rest of the functions in the source repo are functions for comparison.
 # It was shown that the B-statistic was superior so I will leave the implementation at this.
+# Something something

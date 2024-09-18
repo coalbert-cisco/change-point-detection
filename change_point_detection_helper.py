@@ -1,7 +1,6 @@
-import pandas as pd
 import numpy as np
 
-from scipy.stats import normal
+from scipy.stats import norm
 from scipy.optimize import brentq
 
 # Helper functions for Scan B-Statistic with Kernel (SBSK) algorithm.
@@ -117,8 +116,8 @@ def average_run_length_normal_helper(mu: float) -> float:
     Returns:
         float: Calculated helper value for ARL.
     """
-    pdf_value = normal.pdf(mu / 2)
-    cdf_value = normal.cdf(mu / 2)
+    pdf_value = norm.pdf(mu / 2)
+    cdf_value = norm.cdf(mu / 2)
 
     return (2 / mu) * (cdf_value - 0.5) / (mu / 2 * cdf_value + pdf_value)
 

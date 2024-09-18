@@ -131,10 +131,12 @@ def b_statistic_variance(
     for _ in range(iterations):
         if not improve:
             id = np.random.choice(
-                n, 8, replace=False
-            )  # 8 because each u-statistic takes four inputs
+                np.arange(1, n + 1), 6, replace=False
+            )  # 6 because each u-statistic takes four inputs, but two are reused. This was an error in the R implementation
         else:
-            id = np.random.choice(n, 8, replace=False, p=probability_list)
+            id = np.random.choice(
+                np.arange(1, n + 1), 6, replace=False, p=probability_list
+            )
             probability_list[id] -= 1 / iterations
             probability_list /= np.sum(probability_list)
 
@@ -149,9 +151,9 @@ def b_statistic_variance(
         )
         sample_u_stat_2 = u_statistic_kernel(
             x1=sample_row[4, :],
-            y1=sample_row[5, :],
-            x2=sample_row[6, :],
-            y2=sample_row[7, :],
+            y1=sample_row[1, :],
+            x2=sample_row[5, :],
+            y2=sample_row[3, :],
             kernel_bandwidth=kernel_bandwidth,
             kernel=kernel,
         )

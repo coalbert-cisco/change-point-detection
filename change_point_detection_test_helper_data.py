@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
 from scipy.spatial.distance import pdist
-from scipy.stats import skewlaplace
 
 from change_point_detection_helper import threshold_finder
 
@@ -20,30 +18,39 @@ sample_size = 100
 
 # Testing Data. Kernel is set to median pairwise distances between data.
 # Sudden Mean Shift
-data1_temp1, data1_temp2 = np.random.multivariate_normal(
-    mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
-), np.random.multivariate_normal(
-    mean=np.ones(time_steps), cov=np.eye(time_steps), size=sample_size
+data1_temp1, data1_temp2 = (
+    np.random.multivariate_normal(
+        mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
+    ),
+    np.random.multivariate_normal(
+        mean=np.ones(time_steps), cov=np.eye(time_steps), size=sample_size
+    ),
 )
 
 sudden_mean_shift_data = np.vstack((data1_temp1, data1_temp2))
 sudden_mean_shift_kernel_bandwidth = np.median(pdist(sudden_mean_shift_data))
 
 # Gradual Mean Shift
-data2_temp1, data2_temp2 = np.random.multivariate_normal(
-    mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
-), np.random.multivariate_normal(
-    mean=0.1 * np.arange(time_steps), cov=np.eye(time_steps), size=sample_size
+data2_temp1, data2_temp2 = (
+    np.random.multivariate_normal(
+        mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
+    ),
+    np.random.multivariate_normal(
+        mean=0.1 * np.arange(time_steps), cov=np.eye(time_steps), size=sample_size
+    ),
 )
 
 gradual_mean_shift_data = np.vstack((data2_temp1, data2_temp2))
 gradual_mean_shift_kernel_bandwidth = np.median(pdist(gradual_mean_shift_data))
 
 # Sudden Variance Shift
-data3_temp1, data3_temp2 = np.random.multivariate_normal(
-    mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
-), np.random.multivariate_normal(
-    mean=np.zeros(time_steps), cov=np.eye(time_steps) * 5, size=sample_size
+data3_temp1, data3_temp2 = (
+    np.random.multivariate_normal(
+        mean=np.zeros(time_steps), cov=np.eye(time_steps), size=sample_size
+    ),
+    np.random.multivariate_normal(
+        mean=np.zeros(time_steps), cov=np.eye(time_steps) * 5, size=sample_size
+    ),
 )
 
 sudden_variance_shift_data = np.vstack((data3_temp1, data3_temp2))
@@ -60,8 +67,9 @@ periodic_signal_with_noise_kernel_bandwidth = np.median(
 )
 
 # Gaussian to Laplace
-data5_temp1, data5_temp2 = np.random.normal(size=(time_steps, 1)), skewlaplace.rvs(
-    a=1, loc=0, scale=1, size=(100, 1)
+data5_temp1, data5_temp2 = (
+    np.random.normal(size=(time_steps, 1)),
+    np.random.laplace(size=(100, 1)),
 )
 gaussian_to_laplace_data = np.vstack((data5_temp1, data5_temp2))
 gaussian_to_laplace_kernel_bandwidth = np.median(pdist(gaussian_to_laplace_data))

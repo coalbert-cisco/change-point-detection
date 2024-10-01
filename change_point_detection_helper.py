@@ -1,7 +1,6 @@
 import numpy as np
-
-from scipy.stats import norm
 from scipy.optimize import brentq
+from scipy.stats import norm
 
 # Helper functions for Scan B-Statistic with Kernel (SBSK) algorithm.
 # Initially reproducing functions from this repo: https://github.com/Wang-ZH-Stat/SBSK/tree/main
@@ -217,12 +216,10 @@ def b_statistic_variance(
     for _ in range(iterations):
         if not improve:
             id = np.random.choice(
-                np.arange(1, n + 1), 6, replace=False
+                np.arange(1, n), 6, replace=False
             )  # 6 because each u-statistic takes four inputs, but two are reused
         else:
-            id = np.random.choice(
-                np.arange(1, n + 1), 6, replace=False, p=probability_list
-            )
+            id = np.random.choice(np.arange(1, n), 6, replace=False, p=probability_list)
             probability_list[id] -= 1 / iterations
             probability_list /= np.sum(probability_list)
 
